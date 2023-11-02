@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use dashu_float::DBig;
 use ethers::{
     prelude::{abigen, AbiError},
     providers::{Http, Provider, ProviderError},
@@ -58,13 +59,11 @@ impl Chainlink {
             contract: FeedRegistryContract::new(address, provider),
         }
     }
-
-    pub async fn get_usd_price(&self, token: Address) -> Result<U256, RegistryError> {}
 }
 
 #[async_trait]
 impl PriceFeed for Chainlink {
-    async fn usd_price(&self, token: Address) -> Result<f64> {
+    async fn usd_price(&self, token: Address) -> Result<DBig> {
         let token = match token {
             t if t == *WBTC => *BTC,
             t if t == *WETH => *ETH,
@@ -80,9 +79,7 @@ impl PriceFeed for Chainlink {
             Sign::Negative => U256::zero(),
         };
 
-        let price = DBig::from_parts(price.to_string().parse().unwrap(), -8)
-            .to_f64()
-            .value();
+        let price = DBig::from_parts(price.to_string().parse().unwrap(), -8);
 
         Ok(price)
     }

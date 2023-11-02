@@ -6,7 +6,7 @@ mod chainlink {
     use dotenv::dotenv;
     use ethers::providers::{Http, Provider};
 
-    use price_feeds::feeds::ChainLink;
+    use price_feeds::{feeds::Chainlink, PriceFeed};
 
     #[tokio::test]
     async fn test_get_price() {
@@ -17,7 +17,7 @@ mod chainlink {
         let chainlink = Chainlink::new(Arc::new(provider));
 
         let price = chainlink
-            .get_usd_price(
+            .usd_price(
                 "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 "
                     .parse()
                     .unwrap(),
