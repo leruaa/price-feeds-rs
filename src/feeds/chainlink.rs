@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -8,6 +8,7 @@ use ethers::{
     providers::{Http, Provider, ProviderError},
     types::{Address, Sign, I256, U256},
 };
+use futures::{stream::iter, StreamExt, TryStreamExt};
 use once_cell::sync::Lazy;
 use thiserror::Error;
 
@@ -82,6 +83,18 @@ impl PriceFeed for Chainlink {
         let price = DBig::from_parts(price.to_string().parse().unwrap(), -8);
 
         Ok(price)
+    }
+
+    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, DBig>> {
+        let prices = iter(tokens)
+            .then(|t| async move { self.usd_price(*t).await.map(|p| (t, p)) })
+            .try_fold(HashMap::new(), |mut acc, (t, p)| async move {
+                acc.insert(*t, p);
+                Ok(acc)
+            })
+            .await?;
+
+        Ok(prices)
     }
 }
 

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use dashu_float::DBig;
@@ -27,6 +29,17 @@ impl PriceFeed for Fallback {
         for feed in self.feeds.iter() {
             match feed.usd_price(token).await {
                 Ok(price) => return Ok(price),
+                Err(err) => warn!("{err}"),
+            }
+        }
+
+        bail!("All oracles failed to retrieve price")
+    }
+
+    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, DBig>> {
+        for feed in self.feeds.iter() {
+            match feed.usd_prices(tokens).await {
+                Ok(prices) => return Ok(prices),
                 Err(err) => warn!("{err}"),
             }
         }
