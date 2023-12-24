@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
-use dashu_float::{round::mode::HalfAway, DBig, FBig};
+use bigdecimal::BigDecimal;
 use defillama::{Chain, Coin, CoinsClient};
 use ethers::types::Address;
 
@@ -23,7 +23,7 @@ impl Defillama {
 
 #[async_trait]
 impl PriceFeed for Defillama {
-    async fn usd_price(&self, token: Address) -> Result<DBig> {
+    async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
         let coin = Coin::Address(Chain::Ethereum, token.0.into());
         let prices = self.coins_client.current_prices(&[coin.clone()]).await?;
         let payload = prices.get(&coin).ok_or(anyhow!(
@@ -31,14 +31,12 @@ impl PriceFeed for Defillama {
             token
         ))?;
 
-        let price = FBig::<HalfAway, 2>::try_from(payload.price)?
-            .with_base::<10>()
-            .value();
+        let price = BigDecimal::try_from(payload.price)?;
 
         Ok(price)
     }
 
-    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, DBig>> {
+    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, BigDecimal>> {
         let coins = tokens
             .iter()
             .map(|t| Coin::Address(Chain::Ethereum, t.0.into()))

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use dashu_float::DBig;
+use bigdecimal::BigDecimal;
 use ethers::types::Address;
 use tracing::warn;
 
@@ -25,7 +25,7 @@ impl Fallback {
 
 #[async_trait]
 impl PriceFeed for Fallback {
-    async fn usd_price(&self, token: Address) -> Result<DBig> {
+    async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
         for feed in self.feeds.iter() {
             match feed.usd_price(token).await {
                 Ok(price) => return Ok(price),
@@ -36,7 +36,7 @@ impl PriceFeed for Fallback {
         bail!("All oracles failed to retrieve price")
     }
 
-    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, DBig>> {
+    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, BigDecimal>> {
         for feed in self.feeds.iter() {
             match feed.usd_prices(tokens).await {
                 Ok(prices) => return Ok(prices),

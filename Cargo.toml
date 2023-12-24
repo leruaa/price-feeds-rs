@@ -11,10 +11,10 @@ defillama = ["dep:defillama"]
 
 [dependencies]
 defillama = { git = "https://github.com/leruaa/defillama-rs", features = [
-    "dashu",
+    "bigdecimal",
 ], optional = true }
 futures = { version = "0.3", optional = true }
-dashu-float = "0.4"
+bigdecimal = "0.4"
 ethers = { version = "2.0", features = ["abigen"] }
 async-trait = "0.1"
 anyhow = "1.0.72"

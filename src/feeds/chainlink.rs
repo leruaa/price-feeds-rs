@@ -1,12 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use async_trait::async_trait;
-use dashu_float::DBig;
+use bigdecimal::{
+    num_bigint::{BigInt, Sign},
+    BigDecimal,
+};
 use ethers::{
     prelude::{abigen, AbiError},
     providers::{Http, Provider, ProviderError},
-    types::{Address, Sign, I256, U256},
+    types::{Address, I256},
 };
 use futures::{stream::iter, StreamExt, TryStreamExt};
 use once_cell::sync::Lazy;
@@ -64,7 +67,7 @@ impl Chainlink {
 
 #[async_trait]
 impl PriceFeed for Chainlink {
-    async fn usd_price(&self, token: Address) -> Result<DBig> {
+    async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
         let token = match token {
             t if t == *WBTC => *BTC,
             t if t == *WETH => *ETH,
@@ -75,17 +78,19 @@ impl PriceFeed for Chainlink {
 
         let (sign, price) = price.into_sign_and_abs();
 
-        let price = match sign {
-            Sign::Positive => price,
-            Sign::Negative => U256::zero(),
-        };
+        if sign.is_negative() {
+            bail!("The price is negative");
+        }
+        let mut bytes = vec![];
 
-        let price = DBig::from_parts(price.to_string().parse().unwrap(), -8);
+        price.to_little_endian(&mut bytes);
+
+        let price = BigDecimal::from((BigInt::from_bytes_le(Sign::Plus, &bytes), 8));
 
         Ok(price)
     }
 
-    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, DBig>> {
+    async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, BigDecimal>> {
         let prices = iter(tokens)
             .then(|t| async move { self.usd_price(*t).await.map(|p| (t, p)) })
             .try_fold(HashMap::new(), |mut acc, (t, p)| async move {
