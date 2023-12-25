@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
+use alloy_primitives::Address;
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use defillama::{Chain, Coin, CoinsClient};
-use ethers::types::Address;
 
 use crate::PriceFeed;
 

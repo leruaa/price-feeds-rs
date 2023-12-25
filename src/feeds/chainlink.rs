@@ -1,67 +1,58 @@
 use std::{collections::HashMap, sync::Arc};
 
+use alloy_primitives::{address, Address, I256, U256};
+use alloy_providers::provider::{Provider, TempProvider};
+use alloy_rpc_types::{CallInput, CallRequest};
+use alloy_sol_types::{sol, SolCall};
+use alloy_transport::BoxTransport;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::{
     num_bigint::{BigInt, Sign},
     BigDecimal,
 };
-use ethers::{
-    prelude::{abigen, AbiError},
-    providers::{Http, Provider, ProviderError},
-    types::{Address, I256},
-};
-use futures::{stream::iter, StreamExt, TryStreamExt};
-use once_cell::sync::Lazy;
-use thiserror::Error;
 
 use crate::PriceFeed;
+use futures::{stream::iter, StreamExt, TryStreamExt};
 
-abigen!(FeedRegistryContract, "abi/feed_registry.json");
+sol!(FeedRegistryContract, "abi/feed_registry.json");
 
-static USD: Lazy<Address> = Lazy::new(|| {
-    "0x0000000000000000000000000000000000000348"
-        .parse()
-        .unwrap()
-});
+static USD: Address = address!("0000000000000000000000000000000000000348");
 
-static WBTC: Lazy<Address> = Lazy::new(|| {
-    "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
-        .parse()
-        .unwrap()
-});
+static WBTC: Address = address!("2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599");
 
-static BTC: Lazy<Address> = Lazy::new(|| {
-    "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"
-        .parse()
-        .unwrap()
-});
+static BTC: Address = address!("bBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB");
 
-static WETH: Lazy<Address> = Lazy::new(|| {
-    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        .parse()
-        .unwrap()
-});
+static WETH: Address = address!("C02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
 
-static ETH: Lazy<Address> = Lazy::new(|| {
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-        .parse()
-        .unwrap()
-});
+static ETH: Address = address!("EeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
+
+static REGISTRY: Address = address!("47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf");
 
 pub struct Chainlink {
-    contract: FeedRegistryContract<Provider<Http>>,
+    provider: Arc<Provider<BoxTransport>>,
 }
 
 impl Chainlink {
-    pub fn new(provider: Arc<Provider<Http>>) -> Self {
-        let address: Address = "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf"
-            .parse()
-            .unwrap();
+    pub fn new(provider: Arc<Provider<BoxTransport>>) -> Self {
+        Self { provider }
+    }
 
-        Self {
-            contract: FeedRegistryContract::new(address, provider),
-        }
+    async fn latest_answer(&self, base: Address, quote: Address) -> Result<I256> {
+        let tx = CallRequest {
+            to: Some(REGISTRY),
+            input: CallInput::new(
+                FeedRegistryContract::latestAnswerCall::new((base, quote))
+                    .abi_encode()
+                    .into(),
+            ),
+            ..Default::default()
+        };
+
+        let result = self.provider.call(tx, None).await?;
+        let decoded = FeedRegistryContract::latestAnswerCall::abi_decode_returns(&result, true)?;
+
+        Ok(decoded.answer)
     }
 }
 
@@ -69,23 +60,23 @@ impl Chainlink {
 impl PriceFeed for Chainlink {
     async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
         let token = match token {
-            t if t == *WBTC => *BTC,
-            t if t == *WETH => *ETH,
+            t if t == WBTC => BTC,
+            t if t == WETH => ETH,
             _ => token,
         };
 
-        let price: I256 = self.contract.latest_answer(token, *USD).call().await?;
+        let price: I256 = self.latest_answer(token, USD).await?;
 
         let (sign, price) = price.into_sign_and_abs();
 
         if sign.is_negative() {
             bail!("The price is negative");
         }
-        let mut bytes = vec![];
 
-        price.to_little_endian(&mut bytes);
-
-        let price = BigDecimal::from((BigInt::from_bytes_le(Sign::Plus, &bytes), 8));
+        let price = BigDecimal::from((
+            BigInt::from_bytes_be(Sign::Plus, &price.to_be_bytes::<{ U256::BYTES }>()),
+            8,
+        ));
 
         Ok(price)
     }
@@ -101,16 +92,4 @@ impl PriceFeed for Chainlink {
 
         Ok(prices)
     }
-}
-
-pub type ContractError = ethers::prelude::ContractError<Provider<Http>>;
-
-#[derive(Error, Debug)]
-pub enum RegistryError {
-    #[error(transparent)]
-    Abi(#[from] AbiError),
-    #[error(transparent)]
-    Provider(#[from] ProviderError),
-    #[error(transparent)]
-    Contract(#[from] ContractError),
 }

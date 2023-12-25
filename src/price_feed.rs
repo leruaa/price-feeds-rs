@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use alloy_primitives::Address;
 use anyhow::Result;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use ethers::types::Address;
 
 #[async_trait]
 pub trait PriceFeed: Send + Sync {

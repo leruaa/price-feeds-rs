@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use alloy_primitives::Address;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use ethers::types::Address;
 use tracing::warn;
 
 use crate::PriceFeed;
