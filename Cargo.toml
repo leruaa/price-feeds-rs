@@ -16,8 +16,8 @@ defillama = { git = "https://github.com/leruaa/defillama-rs", features = [
 ], optional = true }
 futures = { version = "0.3", optional = true }
 bigdecimal = "0.4"
-alloy-primitives = "0.5.1"
-alloy-sol-types = { version = "0.5.1", features = ["json"] }
+alloy-primitives = "0.6"
+alloy-sol-types = { version = "0.6", features = ["json"] }
 alloy-providers = { git = "https://github.com/alloy-rs/alloy" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy" }
 alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy" }
