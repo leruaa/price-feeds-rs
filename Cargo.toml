@@ -9,13 +9,13 @@ edition = "2021"
 default = ["chainlink", "defillama"]
 chainlink = ["dep:futures"]
 defillama = ["dep:defillama"]
-
+tower = ["dep:tower"]
 [dependencies]
 defillama = { git = "https://github.com/leruaa/defillama-rs", features = [
     "bigdecimal",
 ], optional = true }
 futures = { version = "0.3", optional = true }
-tower = "0.4"
+tower = { version = "0.4", optional = true }
 bigdecimal = "0.4"
 alloy-primitives = "0.6"
 alloy-sol-types = { version = "0.6", features = ["json"] }
