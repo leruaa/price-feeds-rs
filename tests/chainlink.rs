@@ -3,8 +3,9 @@ mod chainlink {
 
     use std::{env, sync::Arc};
 
+    use alloy_network::Ethereum;
     use alloy_primitives::address;
-    use alloy_providers::provider::Provider;
+    use alloy_provider::ProviderBuilder;
     use alloy_rpc_client::RpcClient;
     use dotenv::dotenv;
 
@@ -14,12 +15,8 @@ mod chainlink {
     async fn test_get_price() {
         dotenv().ok();
         let eth_rpc = env::var("ETH_RPC").unwrap();
-
-        let provider = Provider::new_with_client(
-            RpcClient::builder()
-                .reqwest_http(eth_rpc.parse().unwrap())
-                .boxed(),
-        );
+        let rpc_client = RpcClient::builder().reqwest_http(eth_rpc.parse().unwrap());
+        let provider = ProviderBuilder::<_, Ethereum>::new().on_client(rpc_client);
         let chainlink = Chainlink::new(Arc::new(provider));
 
         let price = chainlink

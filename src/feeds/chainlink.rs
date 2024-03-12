@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
+use alloy_network::{Network, TransactionBuilder};
 use alloy_primitives::{address, Address, I256, U256};
-use alloy_providers::provider::{Provider, TempProvider};
-use alloy_rpc_types::{CallInput, CallRequest};
+use alloy_provider::{Provider, RootProvider};
 use alloy_sol_types::{sol, SolCall};
-use alloy_transport::BoxTransport;
+use alloy_transport::Transport;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::{
@@ -29,27 +29,29 @@ static ETH: Address = address!("EeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
 
 static REGISTRY: Address = address!("47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf");
 
-pub struct Chainlink {
-    provider: Arc<Provider<BoxTransport>>,
+pub struct Chainlink<N, T> {
+    provider: Arc<RootProvider<N, T>>,
 }
 
-impl Chainlink {
-    pub fn new(provider: Arc<Provider<BoxTransport>>) -> Self {
+impl<N, T> Chainlink<N, T>
+where
+    N: Network,
+    T: Transport + Clone,
+{
+    pub fn new(provider: Arc<RootProvider<N, T>>) -> Self {
         Self { provider }
     }
 
     async fn latest_answer(&self, base: Address, quote: Address) -> Result<I256> {
-        let tx = CallRequest {
-            to: Some(REGISTRY),
-            input: CallInput::new(
+        let tx = N::TransactionRequest::default()
+            .with_to(REGISTRY.into())
+            .with_input(
                 FeedRegistryContract::latestAnswerCall::new((base, quote))
                     .abi_encode()
                     .into(),
-            ),
-            ..Default::default()
-        };
+            );
 
-        let result = self.provider.call(tx, None).await?;
+        let result = self.provider.call(&tx, None).await?;
         let decoded = FeedRegistryContract::latestAnswerCall::abi_decode_returns(&result, true)?;
 
         Ok(decoded.answer)
@@ -57,7 +59,11 @@ impl Chainlink {
 }
 
 #[async_trait]
-impl PriceFeed for Chainlink {
+impl<N, T> PriceFeed for Chainlink<N, T>
+where
+    N: Network,
+    T: Transport + Clone,
+{
     async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
         let token = match token {
             t if t == WBTC => BTC,
