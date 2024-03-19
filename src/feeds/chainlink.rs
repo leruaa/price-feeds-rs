@@ -1,10 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
-use alloy_network::{Network, TransactionBuilder};
+use alloy::{
+    network::{Network, TransactionBuilder},
+    providers::{Provider, RootProvider},
+    transports::Transport,
+};
 use alloy_primitives::{address, Address, I256, U256};
-use alloy_provider::{Provider, RootProvider};
 use alloy_sol_types::{sol, SolCall};
-use alloy_transport::Transport;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::{

@@ -3,9 +3,8 @@ mod chainlink {
 
     use std::{env, sync::Arc};
 
-    use alloy_network::Ethereum;
+    use alloy::{network::Ethereum, providers::ProviderBuilder};
     use alloy_primitives::address;
-    use alloy_provider::ProviderBuilder;
     use alloy_rpc_client::RpcClient;
     use dotenv::dotenv;
 
