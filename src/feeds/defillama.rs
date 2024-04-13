@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;

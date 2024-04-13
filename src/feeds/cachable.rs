@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 use anyhow::Result;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;

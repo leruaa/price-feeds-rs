@@ -18,8 +18,6 @@ tokio = { version = "1", features = ["sync"] }
 futures = { version = "0.3", optional = true }
 tower = { version = "0.4", optional = true }
 bigdecimal = "0.4"
-alloy-primitives = "0.6"
-alloy-sol-types = { version = "0.6", features = ["json"] }
 alloy = { git = "https://github.com/alloy-rs/alloy", features = [
     "network",
     "providers",
@@ -27,6 +25,8 @@ alloy = { git = "https://github.com/alloy-rs/alloy", features = [
     "rpc",
     "rpc-types",
     "rpc-types-eth",
+    "sol-types",
+    "json",
 ] }
 async-trait = "0.1"
 anyhow = "1.0.72"
@@ -37,6 +37,8 @@ pin-project = "1"
 parking_lot = "0.12"
 
 [dev-dependencies]
-alloy-rpc-client = { git = "https://github.com/alloy-rs/alloy" }
+alloy = { git = "https://github.com/alloy-rs/alloy", features = [
+    "transport-http",
+] }
 tokio = { version = "1", features = ["rt", "macros"] }
 dotenv = "0.15"

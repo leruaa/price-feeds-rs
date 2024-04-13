@@ -1,21 +1,23 @@
 use std::{collections::HashMap, sync::Arc};
 
+use alloy::primitives::{address, Address, I256, U256};
+use alloy::sol_types::SolCall;
 use alloy::{
     network::{Network, TransactionBuilder},
     providers::{Provider, RootProvider},
+    sol,
     transports::Transport,
 };
-use alloy_primitives::{address, Address, I256, U256};
-use alloy_sol_types::{sol, SolCall};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::{
     num_bigint::{BigInt, Sign},
     BigDecimal,
 };
+use futures::TryStreamExt;
 
 use crate::PriceFeed;
-use futures::{stream::iter, StreamExt, TryStreamExt};
+use futures::{stream::iter, StreamExt};
 
 sol!(FeedRegistryContract, "abi/feed_registry.json");
 
@@ -35,12 +37,12 @@ pub struct Chainlink<N, T> {
     provider: Arc<RootProvider<N, T>>,
 }
 
-impl<N, T> Chainlink<N, T>
+impl<T, N> Chainlink<T, N>
 where
-    N: Network,
     T: Transport + Clone,
+    N: Network,
 {
-    pub fn new(provider: Arc<RootProvider<N, T>>) -> Self {
+    pub fn new(provider: Arc<RootProvider<T, N>>) -> Self {
         Self { provider }
     }
 
@@ -61,10 +63,10 @@ where
 }
 
 #[async_trait]
-impl<N, T> PriceFeed for Chainlink<N, T>
+impl<T, N> PriceFeed for Chainlink<T, N>
 where
-    N: Network,
     T: Transport + Clone,
+    N: Network,
 {
     async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
         let token = match token {

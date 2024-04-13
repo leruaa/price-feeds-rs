@@ -1,6 +1,6 @@
 use std::{pin::Pin, sync::Arc, task::Poll};
 
-use alloy_primitives::Address;
+use alloy::primitives::Address;
 use anyhow::Error;
 use bigdecimal::BigDecimal;
 use futures::Future;
