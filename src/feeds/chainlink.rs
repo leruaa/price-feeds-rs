@@ -1,13 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use alloy::primitives::{address, Address, I256, U256};
-use alloy::sol_types::SolCall;
-use alloy::{
-    network::{Network, TransactionBuilder},
-    providers::{Provider, RootProvider},
-    sol,
-    transports::Transport,
-};
+use alloy::{network::Network, providers::Provider, sol, transports::Transport};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::{
@@ -15,11 +9,16 @@ use bigdecimal::{
     BigDecimal,
 };
 use futures::TryStreamExt;
+use FeedRegistryContract::FeedRegistryContractInstance;
 
 use crate::PriceFeed;
 use futures::{stream::iter, StreamExt};
 
-sol!(FeedRegistryContract, "abi/feed_registry.json");
+sol!(
+    #[sol(rpc)]
+    FeedRegistryContract,
+    "abi/feed_registry.json"
+);
 
 static USD: Address = address!("0000000000000000000000000000000000000348");
 
@@ -33,39 +32,34 @@ static ETH: Address = address!("EeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
 
 static REGISTRY: Address = address!("47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf");
 
-pub struct Chainlink<N, T> {
-    provider: Arc<RootProvider<N, T>>,
+pub struct Chainlink<T, P, N> {
+    instance: FeedRegistryContractInstance<T, P, N>,
 }
 
-impl<T, N> Chainlink<T, N>
+impl<T, P, N> Chainlink<T, P, N>
 where
     T: Transport + Clone,
+    P: Provider<T, N>,
     N: Network,
 {
-    pub fn new(provider: Arc<RootProvider<T, N>>) -> Self {
-        Self { provider }
+    pub fn new(provider: P) -> Self {
+        Self {
+            instance: FeedRegistryContract::new(REGISTRY, provider),
+        }
     }
 
     async fn latest_answer(&self, base: Address, quote: Address) -> Result<I256> {
-        let tx = N::TransactionRequest::default()
-            .with_to(REGISTRY.into())
-            .with_input(
-                FeedRegistryContract::latestAnswerCall::new((base, quote))
-                    .abi_encode()
-                    .into(),
-            );
+        let latest_answer = self.instance.latestAnswer(base, quote).call().await?;
 
-        let result = self.provider.call(&tx, None).await?;
-        let decoded = FeedRegistryContract::latestAnswerCall::abi_decode_returns(&result, true)?;
-
-        Ok(decoded.answer)
+        Ok(latest_answer.answer)
     }
 }
 
 #[async_trait]
-impl<T, N> PriceFeed for Chainlink<T, N>
+impl<T, P, N> PriceFeed for Chainlink<T, P, N>
 where
     T: Transport + Clone,
+    P: Provider<T, N>,
     N: Network,
 {
     async fn usd_price(&self, token: Address) -> Result<BigDecimal> {

@@ -10,6 +10,7 @@ default = ["chainlink", "defillama"]
 chainlink = ["dep:futures"]
 defillama = ["dep:defillama"]
 tower = ["dep:tower"]
+
 [dependencies]
 defillama = { git = "https://github.com/leruaa/defillama-rs", features = [
     "bigdecimal",
@@ -18,9 +19,10 @@ tokio = { version = "1", features = ["sync"] }
 futures = { version = "0.3", optional = true }
 tower = { version = "0.4", optional = true }
 bigdecimal = "0.4"
-alloy = { git = "https://github.com/alloy-rs/alloy", features = [
+alloy = { version = "0.1", features = [
     "network",
     "providers",
+    "contract",
     "transports",
     "rpc",
     "rpc-types",
@@ -37,8 +39,6 @@ pin-project = "1"
 parking_lot = "0.12"
 
 [dev-dependencies]
-alloy = { git = "https://github.com/alloy-rs/alloy", features = [
-    "transport-http",
-] }
+alloy = { version = "0.1", features = ["transport-http"] }
 tokio = { version = "1", features = ["rt", "macros"] }
 dotenv = "0.15"
