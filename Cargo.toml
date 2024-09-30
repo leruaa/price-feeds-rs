@@ -17,9 +17,9 @@ defillama = { git = "https://github.com/leruaa/defillama-rs", features = [
 ], optional = true }
 tokio = { version = "1", features = ["sync"] }
 futures = { version = "0.3", optional = true }
-tower = { version = "0.4", optional = true }
+tower = { version = "0.5", optional = true }
 bigdecimal = "0.4"
-alloy = { version = "0.1", features = [
+alloy = { version = "0.3", features = [
     "network",
     "providers",
     "contract",
@@ -39,6 +39,6 @@ pin-project = "1"
 parking_lot = "0.12"
 
 [dev-dependencies]
-alloy = { version = "0.1", features = ["transport-http"] }
+alloy = { version = "0.3", features = ["transport-http"] }
 tokio = { version = "1", features = ["rt", "macros"] }
 dotenv = "0.15"
