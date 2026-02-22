@@ -13,7 +13,7 @@ mod chainlink {
     async fn test_get_price() {
         dotenv().ok();
         let eth_rpc = env::var("ETH_RPC").unwrap();
-        let provider = ProviderBuilder::new().on_http(eth_rpc.parse().unwrap());
+        let provider = ProviderBuilder::new().connect_http(eth_rpc.parse().unwrap());
         let chainlink = Chainlink::new(provider);
 
         let price = chainlink

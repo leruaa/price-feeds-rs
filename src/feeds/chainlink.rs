@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use alloy::primitives::{address, Address, I256, U256};
-use alloy::{network::Network, providers::Provider, sol, transports::Transport};
+use alloy::{network::Network, providers::Provider, sol};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use bigdecimal::{
@@ -32,14 +32,13 @@ static ETH: Address = address!("EeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
 
 static REGISTRY: Address = address!("47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf");
 
-pub struct Chainlink<T, P, N> {
-    instance: FeedRegistryContractInstance<T, P, N>,
+pub struct Chainlink<P, N> {
+    instance: FeedRegistryContractInstance<P, N>,
 }
 
-impl<T, P, N> Chainlink<T, P, N>
+impl<P, N> Chainlink<P, N>
 where
-    T: Transport + Clone,
-    P: Provider<T, N>,
+    P: Provider<N>,
     N: Network,
 {
     pub fn new(provider: P) -> Self {
@@ -51,15 +50,14 @@ where
     async fn latest_answer(&self, base: Address, quote: Address) -> Result<I256> {
         let latest_answer = self.instance.latestAnswer(base, quote).call().await?;
 
-        Ok(latest_answer.answer)
+        Ok(latest_answer)
     }
 }
 
 #[async_trait]
-impl<T, P, N> PriceFeed for Chainlink<T, P, N>
+impl<P, N> PriceFeed for Chainlink<P, N>
 where
-    T: Transport + Clone,
-    P: Provider<T, N>,
+    P: Provider<N>,
     N: Network,
 {
     async fn usd_price(&self, token: Address) -> Result<BigDecimal> {

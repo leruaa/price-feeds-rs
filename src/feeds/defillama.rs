@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, slice};
 
 use alloy::primitives::Address;
 use anyhow::{anyhow, bail, Result};
@@ -24,8 +24,11 @@ impl Defillama {
 #[async_trait]
 impl PriceFeed for Defillama {
     async fn usd_price(&self, token: Address) -> Result<BigDecimal> {
-        let coin = Coin::Address(Chain::Ethereum, token.0.into());
-        let prices = self.coins_client.current_prices(&[coin.clone()]).await?;
+        let coin = Coin::Address(Chain::Ethereum, token);
+        let prices = self
+            .coins_client
+            .current_prices(slice::from_ref(&coin))
+            .await?;
         let payload = prices.get(&coin).ok_or(anyhow!(
             "Failed to get {:?} price from DefiLlama feed",
             token
@@ -39,7 +42,7 @@ impl PriceFeed for Defillama {
     async fn usd_prices(&self, tokens: &[Address]) -> Result<HashMap<Address, BigDecimal>> {
         let coins = tokens
             .iter()
-            .map(|t| Coin::Address(Chain::Ethereum, t.0.into()))
+            .map(|t| Coin::Address(Chain::Ethereum, *t))
             .collect::<Vec<_>>();
 
         let prices = self
